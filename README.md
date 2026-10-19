@@ -6,7 +6,7 @@ Read-only PowerShell diagnostics for Windows Autopilot and Windows Autopilot dev
 >
 > **Test in non-production first.** Run them in a test tenant and on a test device before you use them anywhere else. They are provided AS IS under the MIT license, with no warranty.
 
-Join the Deployment Doctor waitlist: https://zakitpro.com/doctor/
+Join the Deployment Doctor waitlist: https://www.zakitpro.com/doctor/?utm_source=github&utm_medium=readme&utm_campaign=kit1-beta#waitlist
 
 ## Versions
 | Script file | Script version | Matching paid kit version | Last updated |
@@ -104,6 +104,9 @@ Install-Module Pester -MinimumVersion 5.0 -Scope CurrentUser
 Install-Module PSScriptAnalyzer -Scope CurrentUser
 Invoke-Pester -Path ./tests
 ```
+
+## Get the full kit: join the waitlist
+The paid Autopilot + Device Prep Deployment Doctor (Kit 1) launches Dec 1, 2026. Join the waitlist on zakitpro.com to get an email at launch: [**Join the Deployment Doctor waitlist**](https://www.zakitpro.com/doctor/?utm_source=github&utm_medium=readme&utm_campaign=kit1-beta#waitlist)
 
 ## Related
 - Win32 app scripts: [zakopenc/win32-deployment-doctor-beta](https://github.com/zakopenc/win32-deployment-doctor-beta)

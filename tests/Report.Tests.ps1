@@ -195,3 +195,41 @@ Describe 'Kit 1 device diagnostic -SamplePath (offline practice mode)' {
         { & $Device -SamplePath $TestDrive -OutputPath $Out -KnownCausesPath $Db -InformationAction SilentlyContinue } | Should -Throw '*device.json*'
     }
 }
+
+Describe 'Kit 1 beta next-step line' {
+    BeforeAll {
+        $script:KitUrl = 'https://www.zakitpro.com/doctor/?utm_source=script&utm_medium=console&utm_campaign=kit1-beta'
+        $script:FullDb = Join-Path -Path $TestDrive -ChildPath 'full-known-causes.json'
+        (Get-Content -LiteralPath $Db -Raw).Replace('Removed from the beta scripts repo; see the full kit.', 'Full text.') | Set-Content -LiteralPath $script:FullDb -Encoding UTF8
+        $script:SampleDir = Join-Path -Path (Join-Path -Path (Split-Path -Path $PSScriptRoot -Parent) -ChildPath 'sample-data') -ChildPath 'device-prep-failure'
+        if (-not (Get-Command -Name Get-WinEvent -ErrorAction SilentlyContinue)) { function global:Get-WinEvent { param($ListLog, $FilterHashtable, $MaxEvents, $ErrorAction) } }
+        if (-not (Get-Command -Name Get-CimInstance -ErrorAction SilentlyContinue)) { function global:Get-CimInstance { param($ClassName, $ErrorAction) } }
+        if (-not (Get-Command -Name Get-Service -ErrorAction SilentlyContinue)) { function global:Get-Service { param($Name, $ErrorAction) } }
+    }
+    BeforeEach { $script:Out = Join-Path -Path $TestDrive -ChildPath ([guid]::NewGuid().ToString()) }
+    It 'device diagnostic prints the next-step line last, and puts it in the HTML footer as text' -Skip:(-not (Test-Path -LiteralPath (Join-Path -Path (Join-Path -Path (Split-Path -Path $PSScriptRoot -Parent) -ChildPath 'sample-data') -ChildPath 'device-prep-failure'))) {
+        $null = & $Device -SamplePath $script:SampleDir -OutputPath $Out -KnownCausesPath $Db -WarningAction SilentlyContinue -InformationVariable iv
+        @($iv)[-1].MessageData | Should -Be "Next step: the full Deployment Doctor kit is coming. Join the waitlist: $script:KitUrl"
+        $h = Get-Content -LiteralPath (Get-ChildItem -LiteralPath $Out -Filter '*.html')[0].FullName -Raw
+        $h | Should -Match ([regex]::Escape(($script:KitUrl -replace '&', '&amp;')))
+        $h | Should -Not -Match 'href="https://www\.zakitpro'
+        Test-ZkOnlyNextLinkIsExternal -Html $h
+    }
+    It 'device diagnostic prints no next-step line when the full known-causes data is used' -Skip:(-not (Test-Path -LiteralPath (Join-Path -Path (Join-Path -Path (Split-Path -Path $PSScriptRoot -Parent) -ChildPath 'sample-data') -ChildPath 'device-prep-failure'))) {
+        $null = & $Device -SamplePath $script:SampleDir -OutputPath $Out -KnownCausesPath $script:FullDb -WarningAction SilentlyContinue -InformationVariable iv
+        (@($iv).MessageData -join "`n") | Should -Not -Match 'Next step:'
+        (Get-Content -LiteralPath (Get-ChildItem -LiteralPath $Out -Filter '*.html')[0].FullName -Raw) | Should -Not -Match 'zakitpro\.com'
+    }
+    It 'tenant pre-check prints the next-step line last' {
+        Use-ZkFakeGraph
+        & $Tenant -OutputPath $Out -KnownCausesPath $Db -SkipConnect -WarningAction SilentlyContinue -InformationVariable iv
+        @($iv)[-1].MessageData | Should -Be "Next step: the full Deployment Doctor kit is coming. Join the waitlist: $script:KitUrl"
+        $h = Get-Content -LiteralPath (Get-ChildItem -LiteralPath $Out -Filter 'TenantPreCheck-*.html')[0].FullName -Raw
+        Test-ZkOnlyNextLinkIsExternal -Html $h
+    }
+    It 'tenant pre-check prints no next-step line with the full known-causes data' {
+        Use-ZkFakeGraph
+        & $Tenant -OutputPath $Out -KnownCausesPath $script:FullDb -SkipConnect -WarningAction SilentlyContinue -InformationVariable iv
+        (@($iv).MessageData -join "`n") | Should -Not -Match 'Next step:'
+    }
+}

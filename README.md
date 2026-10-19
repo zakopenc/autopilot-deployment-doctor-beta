@@ -1,6 +1,6 @@
 # Autopilot Deployment Doctor (beta scripts)
 
-Read-only PowerShell diagnostics for Windows Autopilot and Windows Autopilot device preparation (Kit 1 scripts v1.3.2), from ZakitPro.
+Read-only PowerShell diagnostics for Windows Autopilot and Windows Autopilot device preparation (Kit 1 scripts v1.3.3), from ZakitPro.
 
 > **Warning: not tested against a live tenant.** These scripts have been checked only with PSScriptAnalyzer and Pester unit tests that use mocked Graph responses and synthetic data. They have not been run on a real tenant or a real device.
 >
@@ -11,8 +11,8 @@ Join the Deployment Doctor waitlist: https://zakitpro.com/doctor/
 ## Versions
 | Script file | Script version | Matching paid kit version | Last updated |
 |---|---|---|---|
-| `scripts/Invoke-TenantPreCheck.ps1` | 1.3.2 | Kit 1 v1.4.2 | 2026-10-16 |
-| `scripts/Invoke-DeviceDiagnostic.ps1` | 1.3.2 | Kit 1 v1.4.2 | 2026-10-16 |
+| `scripts/Invoke-TenantPreCheck.ps1` | 1.3.3 | Kit 1 v1.4.3 | 2026-10-19 |
+| `scripts/Invoke-DeviceDiagnostic.ps1` | 1.3.3 | Kit 1 v1.4.3 | 2026-10-19 |
 
 Script versions are numbered separately from kit (guide) versions: a kit version changes whenever the guide or extras change, while a script version changes only when that script's code changes. The scripts here are byte-identical to the ones in the matching paid kit. See [CHANGELOG.md](CHANGELOG.md).
 

@@ -1,6 +1,9 @@
 # Changelog
 Script versions for this beta repository. Script versions are numbered separately from the paid kit (guide) versions; the matching kit version is listed for each release. The scripts in each release are byte-identical to the ones in the matching paid kit.
 
+## 2026-10-19: scripts 1.3.3 (Kit 1 v1.4.3)
+- Beta runs print one plain "Next step" line at the end (console, and the HTML report footer as text, not a link) pointing to the waitlist page. It only appears when the script is run with the trimmed beta `known-causes.json`, so the same script in the paid kit prints nothing extra. No network calls, no telemetry, nothing is opened.
+
 ## 2026-10-16: repository split (scripts 1.3.2, Kit 1 v1.4.2)
 - Moved from the combined `zakopenc/deployment-doctor-beta` repo (now archived) into this repo. Script files are unchanged; only the folder layout, README, tests' paths and sample report changed.
 

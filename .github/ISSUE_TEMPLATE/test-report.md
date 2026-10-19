@@ -1,6 +1,6 @@
 ---
 name: Test report
-about: Report the results of running a Autopilot Deployment Doctor beta script
+about: Report the results of running an Autopilot Deployment Doctor beta script
 title: "[Test report] <script name>"
 labels: test-report
 ---
@@ -22,12 +22,17 @@ Do not attach unredacted HTML/JSON reports or log files.
 - PowerShell version (`$PSVersionTable.PSVersion`):
 - Microsoft.Graph.Authentication version (tenant script):
 - Deployment type (Autopilot v1 user-driven / pre-provisioning / self-deploying / Device Prep):
-- Run context (admin / SYSTEM / Shift+F10 / -SamplePath):
+- Run context (admin / SYSTEM / Shift+F10 / -SamplePath (fake data)):
 
 ## Results
 - What did you expect?
 - What did the script report (redacted)?
 - Were the findings correct? Any false positives or missed issues?
+
+## Permission
+- [ ] ZakitPro may count this report when deciding whether the kit is ready to release.
+- [ ] ZakitPro may quote a short excerpt of this report, credited to my GitHub handle.
+- [ ] Same as above, but keep me anonymous.
 
 ## Errors
 Paste redacted error messages or warnings here.

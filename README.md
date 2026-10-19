@@ -6,7 +6,7 @@ Read-only PowerShell diagnostics for Windows Autopilot and Windows Autopilot dev
 >
 > **Test in non-production first.** Run them in a test tenant and on a test device before you use them anywhere else. They are provided AS IS under the MIT license, with no warranty.
 
-Join the Deployment Doctor waitlist: https://www.zakitpro.com/doctor/?utm_source=github&utm_medium=readme&utm_campaign=kit1-beta#waitlist
+**Get the full kit.** These scripts are free and will stay free. The paid Autopilot + Device Prep Deployment Doctor adds a 55-page guide and the fix, rollback and confirm steps for all 46 known causes. It's planned for Tuesday, December 1, 2026. [Join the waitlist](https://www.zakitpro.com/doctor/?utm_source=github&utm_medium=readme&utm_campaign=doctor_waitlist&utm_content=kit1_top)
 
 ## Versions
 | Script file | Script version | Matching paid kit version | Last updated |
@@ -105,8 +105,22 @@ Install-Module PSScriptAnalyzer -Scope CurrentUser
 Invoke-Pester -Path ./tests
 ```
 
-## Get the full kit: join the waitlist
-The paid Autopilot + Device Prep Deployment Doctor (Kit 1) launches Dec 1, 2026. Join the waitlist on zakitpro.com to get an email at launch: [**Join the Deployment Doctor waitlist**](https://www.zakitpro.com/doctor/?utm_source=github&utm_medium=readme&utm_campaign=kit1-beta#waitlist)
+## Get the full kit
+
+The scripts in this repo are the same files that ship in the paid kit. You can check them against the hashes at https://www.zakitpro.com/verify/. The Autopilot + Device Prep Deployment Doctor adds what this repo leaves out:
+
+- a 55-page guide, with worked examples on fake data
+- the explanation, fix, rollback and confirm steps for each of the 46 known causes (where your report says "Removed from the beta scripts repo")
+- a printable flowchart and a one-page quick start
+- quarterly known-cause updates for 12 months
+
+It's planned for Tuesday, December 1, 2026, and waitlist members hear first. Signing up also gets you the free Device Prep Pre-Check Lite: [join the waitlist](https://www.zakitpro.com/doctor/?utm_source=github&utm_medium=readme&utm_campaign=doctor_waitlist&utm_content=kit1_end).
+
+Want to see a report before you run anything? [docs/sample-report.html](https://github.com/zakopenc/autopilot-deployment-doctor-beta/blob/main/docs/sample-report.html) is the device diagnostic's output on the invented Device Prep failure in `sample-data/`. GitHub shows the file's source, so download it (Raw, then save) and open it in a browser.
+
+### Ran it on a real tenant or device?
+
+Please open a [Test report](https://github.com/zakopenc/autopilot-deployment-doctor-beta/issues/new?template=test-report.md), scrubbed first: no tenant names, IDs, UPNs, serial numbers, hostnames or secrets. The paid kit doesn't go on sale until at least one tester has reported a run on a real tenant or device, so a clean run with nothing to report helps too. I'll ask before I quote or count anything you post.
 
 ## Related
 - Win32 app scripts: [zakopenc/win32-deployment-doctor-beta](https://github.com/zakopenc/win32-deployment-doctor-beta)

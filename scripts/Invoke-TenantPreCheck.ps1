@@ -58,7 +58,7 @@
 
 .NOTES
     Name:         Invoke-TenantPreCheck.ps1
-    Version:      1.3.2 (2026-10-16)
+    Version:      1.3.3 (2026-10-19)
     Publisher:    ZakitPro - Abderrazak Elbouchikhi (Zak) - hello@zakitpro.com
     Requires:     Windows PowerShell 5.1 or PowerShell 7.x; Microsoft.Graph.Authentication 2.x.
                   An account with read access to Intune and Entra (for example Global Reader + Intune
@@ -534,6 +534,31 @@ function ConvertTo-ZkReportStatus {
     }
 }
 
+function Get-ZkNextStepNote {
+    <#
+    .SYNOPSIS
+        Returns the one-line next-step pointer for beta runs, or an empty string.
+    .DESCRIPTION
+        The public beta repository ships a trimmed known-causes.json whose text fields read
+        "Removed from the beta scripts repo". Only then is the next-step line returned, so the
+        same script inside the paid kit prints nothing extra. Text only: no network call,
+        no telemetry, and nothing is opened.
+    .PARAMETER KnownCause
+        The parsed known-causes.json, or its causes array.
+    .EXAMPLE
+        Get-ZkNextStepNote -KnownCause $knownCauses
+    #>
+    [CmdletBinding()]
+    [OutputType([string])]
+    param([Parameter()][AllowNull()][object]$KnownCause)
+    if ($null -eq $KnownCause) { return '' }
+    $raw = ConvertTo-Json -InputObject $KnownCause -Depth 8 -Compress
+    if ($raw -match 'Removed from the beta scripts repo') {
+        return 'Next step: the full Deployment Doctor kit is coming. Join the waitlist: https://www.zakitpro.com/doctor/?utm_source=script&utm_medium=console&utm_campaign=kit1-beta'
+    }
+    ''
+}
+
 function Get-ZkNextStepLink {
     <#
     .SYNOPSIS
@@ -576,6 +601,8 @@ function ConvertTo-ZkDashboardHtml {
         Pre-escaped HTML appended after the findings table.
     .PARAMETER Brand
         Product name shown above the title.
+    .PARAMETER FooterNote
+        Optional plain-text line added to the footer (HTML-encoded, no link).
     .PARAMETER Banner
         Plain-text notice shown under the header.
     .EXAMPLE
@@ -593,7 +620,8 @@ function ConvertTo-ZkDashboardHtml {
         [Parameter()][AllowEmptyCollection()][object[]]$Finding = @(),
         [Parameter()][string]$ExtraHtml = '',
         [Parameter()][string]$Brand = 'ZakitPro Deployment Doctor',
-        [Parameter()][string]$Banner = 'Read-only, local report. Not tested against a live tenant. Test in non-production first. This file makes no network requests.'
+        [Parameter()][string]$Banner = 'Read-only, local report. Not tested against a live tenant. Test in non-production first. This file makes no network requests.',
+        [Parameter()][string]$FooterNote = ''
     )
     $enc = { param($x) [System.Net.WebUtility]::HtmlEncode([string]$x) }
     $label = @{ red = 'Critical'; yellow = 'Warning'; green = 'Passed'; grey = 'Info' }
@@ -679,7 +707,7 @@ window.addEventListener("beforeprint",function(){for(var i=0;i<rows.length;i++){
     [void]$sb.Append($rows.ToString())
     [void]$sb.Append('</tbody></table></div>')
     [void]$sb.Append($ExtraHtml)
-    [void]$sb.Append('<footer>Health score = round(100 x (Passed + 0.5 x Warning) / (Passed + Warning + Critical)); Info and not-checked rows are excluded, and the score is 100 when nothing was scored. If any Critical finding exists, the score is capped at 49 and shown in red. It summarises this run only and is not a security rating. Generated locally by a read-only script; no data leaves this file.</footer>')
+    [void]$sb.Append('<footer>Health score = round(100 x (Passed + 0.5 x Warning) / (Passed + Warning + Critical)); Info and not-checked rows are excluded, and the score is 100 when nothing was scored. If any Critical finding exists, the score is capped at 49 and shown in red. It summarises this run only and is not a security rating. Generated locally by a read-only script; no data leaves this file.' + $(if ($FooterNote) { '<br>' + (& $enc $FooterNote) } else { '' }) + '</footer>')
     [void]$sb.Append('</div><script>' + $js + '</script></body></html>')
     $sb.ToString()
 }
@@ -708,7 +736,7 @@ $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $jsonFile = Join-Path -Path $OutputPath -ChildPath "TenantPreCheck-$stamp.json"
 $htmlFile = Join-Path -Path $OutputPath -ChildPath "TenantPreCheck-$stamp.html"
 $report = [PSCustomObject]@{
-    Tool      = 'ZakitPro Kit 1 Invoke-TenantPreCheck 1.3.2'
+    Tool      = 'ZakitPro Kit 1 Invoke-TenantPreCheck 1.3.3'
     RunAt     = (Get-Date).ToString('o')
     TenantId  = $context.TenantId
     Scopes    = $context.Scopes
@@ -717,6 +745,7 @@ $report = [PSCustomObject]@{
 }
 $report | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $jsonFile -Encoding UTF8
 
+$nextStep = Get-ZkNextStepNote -KnownCause $knownCauses
 if (-not $NoHtml) {
     $dash = foreach ($f in $script:Findings) {
         $urls = @(); $why = @()
@@ -731,9 +760,10 @@ if (-not $NoHtml) {
         $ev = $ev -join "`n"
         [pscustomobject]@{ Status = $f.Result; Scope = $f.Module; Check = ('{0} {1}' -f $f.Id, $f.Check); Finding = $f.Detail; Evidence = $ev; NextHtml = (Get-ZkNextStepLink -Url $urls -Code (@($f.KnownCauseIds) -join ', ')) }
     }
-    $html = ConvertTo-ZkDashboardHtml -Title 'Tenant pre-check' -Subtitle ('Kit 1 | run {0} | tenant {1} | read-only Graph (GET plus one documented read action)' -f $report.RunAt, $context.TenantId) -Finding @($dash)
+    $html = ConvertTo-ZkDashboardHtml -Title 'Tenant pre-check' -Subtitle ('Kit 1 | run {0} | tenant {1} | read-only Graph (GET plus one documented read action)' -f $report.RunAt, $context.TenantId) -Finding @($dash) -FooterNote $nextStep
     Set-Content -LiteralPath $htmlFile -Value $html -Encoding UTF8
 }
 else { $htmlFile = '(skipped: -NoHtml)' }
 Write-Information -MessageData "Reports: $htmlFile ; $jsonFile" -InformationAction Continue
+if ($nextStep) { Write-Information -MessageData $nextStep -InformationAction Continue }
 if ($PassThru) { $script:Findings }

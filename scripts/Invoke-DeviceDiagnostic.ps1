@@ -66,7 +66,7 @@
 
 .NOTES
     Name:         Invoke-DeviceDiagnostic.ps1
-    Version:      1.3.2 (2026-10-16)
+    Version:      1.3.3 (2026-10-19)
     Publisher:    ZakitPro - Abderrazak Elbouchikhi (Zak) - hello@zakitpro.com
     Requires:     Windows 10/11, Windows PowerShell 5.1. Run elevated (or as SYSTEM at Shift+F10) to read all
                   logs. No modules, no network, no Graph.
@@ -562,7 +562,7 @@ $collectMd = 'md C:\Temp   (or: New-Item -Path C:\Temp -ItemType Directory -Forc
 $collect = 'mdmdiagnosticstool.exe -area Autopilot -cab C:\Temp\AutopilotDiag.cab'
 $collectTpm = 'mdmdiagnosticstool.exe -area "Autopilot;TPM" -cab C:\Temp\AutopilotDiag.cab'
 
-Write-Information -MessageData "`nZakitPro Deployment Doctor - device diagnostic 1.3.2 (read-only)" -InformationAction Continue
+Write-Information -MessageData "`nZakitPro Deployment Doctor - device diagnostic 1.3.3 (read-only)" -InformationAction Continue
 Write-Information -MessageData "Expected: $ExpectedMode | Deployment type: $mode | $($script:Facts.OS) | IME: $(if ($imeVersion) { $imeVersion } else { 'not installed' })" -InformationAction Continue
 if ($verdicts.Count -eq 0) { Write-Information -MessageData 'No known-cause signals found.' -InformationAction Continue }
 foreach ($v in $verdicts) {
@@ -596,6 +596,31 @@ function ConvertTo-ZkReportStatus {
         '^(Pass|OK|Healthy)' { return 'green' }
         default { return 'grey' }
     }
+}
+
+function Get-ZkNextStepNote {
+    <#
+    .SYNOPSIS
+        Returns the one-line next-step pointer for beta runs, or an empty string.
+    .DESCRIPTION
+        The public beta repository ships a trimmed known-causes.json whose text fields read
+        "Removed from the beta scripts repo". Only then is the next-step line returned, so the
+        same script inside the paid kit prints nothing extra. Text only: no network call,
+        no telemetry, and nothing is opened.
+    .PARAMETER KnownCause
+        The parsed known-causes.json, or its causes array.
+    .EXAMPLE
+        Get-ZkNextStepNote -KnownCause $knownCauses
+    #>
+    [CmdletBinding()]
+    [OutputType([string])]
+    param([Parameter()][AllowNull()][object]$KnownCause)
+    if ($null -eq $KnownCause) { return '' }
+    $raw = ConvertTo-Json -InputObject $KnownCause -Depth 8 -Compress
+    if ($raw -match 'Removed from the beta scripts repo') {
+        return 'Next step: the full Deployment Doctor kit is coming. Join the waitlist: https://www.zakitpro.com/doctor/?utm_source=script&utm_medium=console&utm_campaign=kit1-beta'
+    }
+    ''
 }
 
 function Get-ZkNextStepLink {
@@ -640,6 +665,8 @@ function ConvertTo-ZkDashboardHtml {
         Pre-escaped HTML appended after the findings table.
     .PARAMETER Brand
         Product name shown above the title.
+    .PARAMETER FooterNote
+        Optional plain-text line added to the footer (HTML-encoded, no link).
     .PARAMETER Banner
         Plain-text notice shown under the header.
     .EXAMPLE
@@ -657,7 +684,8 @@ function ConvertTo-ZkDashboardHtml {
         [Parameter()][AllowEmptyCollection()][object[]]$Finding = @(),
         [Parameter()][string]$ExtraHtml = '',
         [Parameter()][string]$Brand = 'ZakitPro Deployment Doctor',
-        [Parameter()][string]$Banner = 'Read-only, local report. Not tested against a live tenant. Test in non-production first. This file makes no network requests.'
+        [Parameter()][string]$Banner = 'Read-only, local report. Not tested against a live tenant. Test in non-production first. This file makes no network requests.',
+        [Parameter()][string]$FooterNote = ''
     )
     $enc = { param($x) [System.Net.WebUtility]::HtmlEncode([string]$x) }
     $label = @{ red = 'Critical'; yellow = 'Warning'; green = 'Passed'; grey = 'Info' }
@@ -743,19 +771,20 @@ window.addEventListener("beforeprint",function(){for(var i=0;i<rows.length;i++){
     [void]$sb.Append($rows.ToString())
     [void]$sb.Append('</tbody></table></div>')
     [void]$sb.Append($ExtraHtml)
-    [void]$sb.Append('<footer>Health score = round(100 x (Passed + 0.5 x Warning) / (Passed + Warning + Critical)); Info and not-checked rows are excluded, and the score is 100 when nothing was scored. If any Critical finding exists, the score is capped at 49 and shown in red. It summarises this run only and is not a security rating. Generated locally by a read-only script; no data leaves this file.</footer>')
+    [void]$sb.Append('<footer>Health score = round(100 x (Passed + 0.5 x Warning) / (Passed + Warning + Critical)); Info and not-checked rows are excluded, and the score is 100 when nothing was scored. If any Critical finding exists, the score is capped at 49 and shown in red. It summarises this run only and is not a security rating. Generated locally by a read-only script; no data leaves this file.' + $(if ($FooterNote) { '<br>' + (& $enc $FooterNote) } else { '' }) + '</footer>')
     [void]$sb.Append('</div><script>' + $js + '</script></body></html>')
     $sb.ToString()
 }
 
 # ------------------------------------------------------------------ reports
+$nextStep = Get-ZkNextStepNote -KnownCause $knownCauses
 try {
     if (-not (Test-Path -LiteralPath $OutputPath)) { New-Item -Path $OutputPath -ItemType Directory | Out-Null }
     $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
     $jsonFile = Join-Path -Path $OutputPath -ChildPath "DeviceDiagnostic-$stamp.json"
 $allCauseIds = @($verdicts | ForEach-Object { $_.KnownCauseIds })
     [PSCustomObject]@{
-        Tool     = 'ZakitPro Kit 1 Invoke-DeviceDiagnostic 1.3.2'
+        Tool     = 'ZakitPro Kit 1 Invoke-DeviceDiagnostic 1.3.3'
         Facts    = $script:Facts
         Verdicts = $verdicts
         Timeline = $ordered
@@ -777,9 +806,10 @@ $allCauseIds = @($verdicts | ForEach-Object { $_.KnownCauseIds })
         $extra = "<h2>Collect before reset</h2><p><code>$(& $enc $collectMd)</code><br><code>$(& $enc $collect)</code><br><code>$(& $enc $collectTpm)</code> (self-deploying, pre-provisioning or any other physical device, per Learn; user-driven mode: the first command)</p>" +
         "<h2>Timeline</h2><p class=`"muted`">Phase order; times approximate; registry rows have no time.</p><div class=`"tablewrap`"><table><thead><tr><th>Phase</th><th>Time</th><th>Source</th><th>Message</th></tr></thead><tbody>$($tRows -join "`n")</tbody></table></div>"
         $htmlFile = Join-Path -Path $OutputPath -ChildPath "DeviceDiagnostic-$stamp.html"
-        ConvertTo-ZkDashboardHtml -Title 'Device diagnostic' -Subtitle ('Kit 1 | {0} | {1} | {2} | IME {3} | run {4}' -f $script:Facts.Source, $mode, $script:Facts.OS, $imeVersion, $script:Facts.RunAt) -Banner $(if ($script:Sample) { 'Sample run on FAKE data. Nothing on this computer was read.' } else { 'Read-only, local report. Not tested on a real device. Test on a non-production device first. This file makes no network requests.' }) -Finding @($dash) -ExtraHtml $extra | Set-Content -LiteralPath $htmlFile -Encoding UTF8
+        ConvertTo-ZkDashboardHtml -Title 'Device diagnostic' -Subtitle ('Kit 1 | {0} | {1} | {2} | IME {3} | run {4}' -f $script:Facts.Source, $mode, $script:Facts.OS, $imeVersion, $script:Facts.RunAt) -Banner $(if ($script:Sample) { 'Sample run on FAKE data. Nothing on this computer was read.' } else { 'Read-only, local report. Not tested on a real device. Test on a non-production device first. This file makes no network requests.' }) -Finding @($dash) -ExtraHtml $extra -FooterNote $nextStep | Set-Content -LiteralPath $htmlFile -Encoding UTF8
     }
     Write-Information -MessageData "Reports written to $OutputPath" -InformationAction Continue
+    if ($nextStep) { Write-Information -MessageData $nextStep -InformationAction Continue }
 }
 catch {
     Write-Error -Message "Could not write reports to $OutputPath : $($_.Exception.Message)"
